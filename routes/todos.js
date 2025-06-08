@@ -1,59 +1,76 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
+const pool = require('../db');
 
 // In-memory "database"
-let todos = [];
+// let todos = [];
 
 // Get all todos
-router.get('/', (req, res) => {
-  res.json(todos);
+router.get('/', async (req, res) => {
+  const result = await pool.query(
+    'SELECT * FROM todos ORDER BY created_at DESC'
+  );
+  res.json(result.rows);
 });
 
 // Create a new todo
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { title } = req.body;
   if (!title) {
     return res.status(400).json({ error: 'Title is required' });
   }
-  const newTodo = {
-    id: uuidv4(),
-    title,
-  };
-  todos.push(newTodo);
-  res.status(201).json(newTodo);
+  const id = uuidv4();
+  const result = await pool.query(
+    'INSERT INTO todos (id, title) VALUES ($1, $2) RETURNING *',
+    [id, title]
+  );
+  res.status(201).json(result.rows[0]);
 });
 
 // Get a specific todo by ID
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   const { id } = req.params;
-  const todo = todos.find((todo) => todo.id === id);
-  if (!todo) {
-    return res.status(404).json({ error: 'Todo not found' });
+
+  try {
+    const result = await pool.query('SELECT * FROM todos WHERE id = $1', [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Todo not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
   }
-  res.json(todo);
 });
 
 // Update a todo by ID
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { title } = req.body;
-  const todoIndex = todos.findIndex((todo) => todo.id === id);
 
-  if (todoIndex === -1) {
-    return res.status(404).json({ error: 'Todo not found' });
-  }
+  try {
+    const result = await pool.query(
+      'UPDATE todos SET title = $1 WHERE id = $2 RETURNING *',
+      [title, id]
+    );
 
-  if (title !== undefined) {
-    todos[todoIndex].title = title;
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Todo not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
   }
-  res.json(todos[todoIndex]);
 });
 
 // Delete a todo
-router.delete('/:id', (req, res) => {
-  const { id } = req.params;
-  todos = todos.filter((todo) => todo.id !== id);
+router.delete('/:id', async (req, res) => {
+  await pool.query('DELETE FROM todos WHERE id = $1', [req.params.id]);
   res.status(204).end();
 });
 
