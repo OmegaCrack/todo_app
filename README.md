@@ -18,6 +18,9 @@ It supports basic CRUD operations using in-memory storage.
   docker run -p 3000:3000 todo-app
 ### The API will be available at http://localhost:3000
 
+# Run The App
+docker-compose up --build
+
 #  API Endpoints
 ##  GET /todos
 ##  POST /todos
