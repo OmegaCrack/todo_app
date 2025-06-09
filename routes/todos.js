@@ -6,6 +6,16 @@ const pool = require('../db');
 // In-memory "database"
 // let todos = [];
 
+/**
+ * @swagger
+ * /todos:
+ *   get:
+ *     summary: Get all todos
+ *     tags: [Todos]
+ *     responses:
+ *       200:
+ *         description: List of todos
+ */
 // Get all todos
 router.get('/', async (req, res) => {
   const result = await pool.query(
@@ -15,6 +25,27 @@ router.get('/', async (req, res) => {
 });
 
 // Create a new todo
+/**
+ * @swagger
+ * /todos:
+ *   post:
+ *     summary: Create a new todo
+ *     tags: [Todos]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *             properties:
+ *               title:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Todo created
+ */
 router.post('/', async (req, res) => {
   const { title, completed = false, due_date = null } = req.body;
   if (!title) {
@@ -35,6 +66,31 @@ router.post('/', async (req, res) => {
 });
 
 // Get a specific todo by ID
+/**
+ * @swagger
+ * /todos/:id:
+ *   get:
+ *     summary: Get a specific todo by ID
+ *     tags: [Todos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         description: UUID of the todo
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Todo found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Todo'
+ *       404:
+ *         description: Todo not found
+ *       500:
+ *         description: Internal server error
+ */
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -53,6 +109,45 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update a todo by ID
+/**
+ * @swagger
+ * /todos/{id}:
+ *   put:
+ *     summary: Update a todo item by ID
+ *     tags: [Todos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: UUID of the todo to update
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               completed:
+ *                 type: boolean
+ *               due_date:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       200:
+ *         description: Updated todo item
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Todo'
+ *       404:
+ *         description: Todo not found
+ *       500:
+ *         description: Internal server error
+ */
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { title, completed, due_date } = req.body;
@@ -75,6 +170,22 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete a todo
+/**
+ * @swagger
+ * /todos/{id}:
+ *   delete:
+ *     summary: Delete a todo by ID
+ *     tags: [Todos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Todo deleted
+ */
 router.delete('/:id', async (req, res) => {
   await pool.query('DELETE FROM todos WHERE id = $1', [req.params.id]);
   res.status(204).end();
