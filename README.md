@@ -10,6 +10,11 @@ It supports basic CRUD operations using in-memory storage.
 - Update to-do item by ID
 - Delete a to-do item by ID
 - Dockerized for consistent deployment
+
+# Run Local
+- npm install
+- node server.js
+
       
 #  Run with Docker
 ## 1. Build the Docker Image
