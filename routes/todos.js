@@ -16,16 +16,22 @@ router.get('/', async (req, res) => {
 
 // Create a new todo
 router.post('/', async (req, res) => {
-  const { title } = req.body;
+  const { title, completed = false, due_date = null } = req.body;
   if (!title) {
     return res.status(400).json({ error: 'Title is required' });
   }
-  const id = uuidv4();
-  const result = await pool.query(
-    'INSERT INTO todos (id, title) VALUES ($1, $2) RETURNING *',
-    [id, title]
-  );
-  res.status(201).json(result.rows[0]);
+
+  try {
+    const id = uuidv4();
+    const result = await pool.query(
+      'INSERT INTO todos (id, title,completed, due_date) VALUES ($1, $2, $3, $4) RETURNING *',
+      [id, title, completed, due_date]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating todo: ', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Get a specific todo by ID
@@ -49,12 +55,12 @@ router.get('/:id', async (req, res) => {
 // Update a todo by ID
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { title } = req.body;
+  const { title, completed, due_date } = req.body;
 
   try {
     const result = await pool.query(
-      'UPDATE todos SET title = $1 WHERE id = $2 RETURNING *',
-      [title, id]
+      'UPDATE todos SET title = $1, completed = $2, due_date = $3 WHERE id = $4 RETURNING *',
+      [title, completed, due_date, id]
     );
 
     if (result.rowCount === 0) {
@@ -63,7 +69,7 @@ router.put('/:id', async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
+    console.error(`Error updating todo with ID ${id}:`, err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
